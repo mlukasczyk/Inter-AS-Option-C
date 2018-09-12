@@ -1,0 +1,192 @@
+!! IOS XR Configuration version = 6.4.2
+!! Last configuration change at Wed Sep 12 19:46:26 2018 by admin
+!
+hostname 9kXRv-R4
+domain lookup disable
+username admin
+ group root-lr
+ group cisco-support
+ secret 5 $1$Kkxu$aBrSvkkTA/ph8VcCIdYxn0
+!
+vrf EIGRP
+ address-family ipv4 unicast
+  import route-target
+   47:1
+  !
+  export route-target
+   47:1
+  !
+ !
+ address-family ipv6 unicast
+  import route-target
+   47:1
+  !
+  export route-target
+   47:1
+  !
+ !
+!
+line console
+ exec-timeout 0 0
+!
+call-home
+ service active
+ contact smart-licensing
+ profile CiscoTAC-1
+  active
+  destination transport-method http
+ !
+!
+interface Loopback0
+ ipv4 address 50.1.1.14 255.255.255.255
+ ipv6 address 2001:50:1:1::14/128
+!
+interface MgmtEth0/RP0/CPU0/0
+ ipv4 address 192.168.200.114 255.255.255.0
+!
+interface GigabitEthernet0/0/0/0.614
+ ipv4 address 50.6.14.14 255.255.255.0
+ ipv6 address 2001:50:6:14::14/64
+ encapsulation dot1q 614
+!
+interface GigabitEthernet0/0/0/0.714
+ ipv4 address 50.7.14.14 255.255.255.0
+ ipv6 address 2001:50:7:14::14/64
+ encapsulation dot1q 714
+!
+interface GigabitEthernet0/0/0/0.1314
+ ipv4 address 50.13.14.14 255.255.255.0
+ ipv6 address 200:50:13:14::14/64
+ encapsulation dot1q 1314
+!
+interface GigabitEthernet0/0/0/1
+ vrf EIGRP
+ ipv4 address 50.8.14.14 255.255.255.0
+ ipv6 address 2001:50:8:14::14/64
+!
+interface GigabitEthernet0/0/0/2
+ shutdown
+!
+interface GigabitEthernet0/0/0/3
+ shutdown
+!
+interface GigabitEthernet0/0/0/4
+ shutdown
+!
+interface GigabitEthernet0/0/0/5
+ shutdown
+!
+interface GigabitEthernet0/0/0/6
+ shutdown
+!
+route-policy PASS
+  pass
+end-policy
+!
+route-policy RT_REWRITE
+  if extcommunity rt matches-every (47:3) then
+    delete extcommunity rt in (47:3)
+    set extcommunity rt (13:3) additive
+  endif
+end-policy
+!
+router ospf 1
+ router-id 50.1.1.14
+ mpls ldp auto-config
+ address-family ipv4 unicast
+ area 0
+  mpls traffic-eng
+  interface Loopback0
+   passive enable
+  !
+  interface GigabitEthernet0/0/0/0.614
+   network point-to-point
+  !
+  interface GigabitEthernet0/0/0/0.714
+   network point-to-point
+  !
+  interface GigabitEthernet0/0/0/0.1314
+   network point-to-point
+  !
+ !
+ mpls traffic-eng router-id Loopback0
+!
+router bgp 47
+ bgp router-id 50.1.1.14
+ address-family vpnv4 unicast
+ !
+ address-family vpnv6 unicast
+ !
+ address-family l2vpn vpls-vpws
+ !
+ neighbor 50.1.1.7
+  remote-as 47
+  update-source Loopback0
+  address-family vpnv4 unicast
+  !
+  address-family vpnv6 unicast
+  !
+  address-family l2vpn vpls-vpws
+   route-reflector-client
+  !
+ !
+ neighbor 50.1.1.11
+  remote-as 13
+  ebgp-multihop 255
+  update-source Loopback0
+  address-family l2vpn vpls-vpws
+   route-policy PASS in
+   route-policy RT_REWRITE out
+   Signalling ldp disable
+   next-hop-unchanged
+  !
+ !
+ vrf EIGRP
+  rd 47:1
+  address-family ipv4 unicast
+   redistribute eigrp 1
+  !
+  address-family ipv6 unicast
+   redistribute eigrp 1
+  !
+ !
+!
+rsvp
+ interface GigabitEthernet0/0/0/0.614
+  bandwidth 1000000
+ !
+ interface GigabitEthernet0/0/0/0.714
+  bandwidth 1000000
+ !
+ interface GigabitEthernet0/0/0/0.1314
+  bandwidth 1000000
+ !
+!
+mpls traffic-eng
+ interface GigabitEthernet0/0/0/0.614
+ !
+ interface GigabitEthernet0/0/0/0.714
+ !
+ interface GigabitEthernet0/0/0/0.1314
+ !
+!
+mpls ldp
+ router-id 50.1.1.14
+!
+router eigrp 1
+ vrf EIGRP
+  address-family ipv4
+   autonomous-system 1
+   redistribute bgp 47
+   interface GigabitEthernet0/0/0/1
+   !
+  !
+  address-family ipv6
+   autonomous-system 1
+   redistribute bgp 47
+   interface GigabitEthernet0/0/0/1
+   !
+  !
+ !
+!
+end
